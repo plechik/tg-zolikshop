@@ -1,7 +1,10 @@
+# Игнорировать абсолютно всё
 *
 
+# Исключения (что разрешено пушить)
+!.github/
+!.github/workflows/
+!.github/workflows/deploy.yml
 !templates/
 !templates/index.html
-
-# Сделать исключение для самого файла .gitignore (чтобы настройки сохранялись)
 !.gitignore
