@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Serverless Mini App</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: var(--tg-theme-bg-color, #ffffff);
+            color: var(--tg-theme-text-color, #000000);
+            text-align: center;
+            padding-top: 50px;
+        }
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            background-color: var(--tg-theme-button-color, #0088cc);
+            color: var(--tg-theme-button-text-color, #ffffff);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Привет, <span id="user-name">Пользователь</span>!</h1>
+    
+    <button id="simple-send">Отправить данные в чат</button>
+    
+    <button id="worker-send">Запрос через Cloudflare</button>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+
+        if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+            document.getElementById('user-name').innerText = tg.initDataUnsafe.user.first_name;
+        }
+
+        // Логика кнопки 1 (Базовая отправка через интерфейс TG)
+        document.getElementById('simple-send').addEventListener('click', () => {
+            tg.sendData(JSON.stringify({ source: "GitHub Pages", status: "ok" }));
+            tg.close();
+        });
+
+        // Логика кнопки 2 (Отправка на Cloudflare Worker)
+        document.getElementById('worker-send').addEventListener('click', async () => {
+            // Сюда мы вставим адрес нашего Cloudflare Worker после Шага 2
+            const WORKER_URL = 'https://your-worker-name.workers.dev/api'; 
+            
+            const userId = tg.initDataUnsafe.user ? tg.initDataUnsafe.user.id : 0;
+
+            try {
+                const response = await fetch(WORKER_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        user_id: userId, 
+                        text: "Сигнал из мини-приложения прилетел в Cloudflare!" 
+                    })
+                });
+                
+                if (response.ok) {
+                    tg.showAlert("Успешно отправлено через серверлесс!");
+                }
+            } catch (error) {
+                tg.showAlert("Ошибка отправки: " + error);
+            }
+        });
+    </script>
+</body>
+</html>
