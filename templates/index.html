@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Serverless Mini App</title>
+    <title>ZolikStore Mini App</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body {
@@ -22,6 +22,10 @@
             border-radius: 8px;
             cursor: pointer;
             margin: 10px;
+            transition: opacity 0.2s;
+        }
+        button:active {
+            opacity: 0.8;
         }
     </style>
 </head>
@@ -30,62 +34,52 @@
     <h1>Привет, <span id="user-name">Пользователь</span>!</h1>
     
     <button id="simple-send">Отправить данные в чат</button>
-    
     <button id="worker-send">Запрос через Cloudflare</button>
 
     <script>
-        // Инициализируем WebApp
         const tg = window.Telegram.WebApp;
-
         tg.ready(); 
         tg.expand();
 
-        // Проверяем имя пользователя (теперь на ПК через инлайн-кнопку оно точно определится)
+        // Отображаем имя пользователя, если Telegram его передал
         if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
             document.getElementById('user-name').innerText = tg.initDataUnsafe.user.first_name;
         }
 
-        // Логика кнопки 1 (Просто закрываем WebApp, так как sendData доступен только в Reply-режиме)
-        document.getElementById('simple-send').addEventListener('click', () => {
-            tg.close();
-        });
+        const WORKER_URL = 'https://zolikvkedax.plechik52.workers.dev/'; 
 
-        // Логика кнопки 2 (Отправка на Cloudflare Worker)
-        document.getElementById('worker-send').addEventListener('click', async () => {
-            const WORKER_URL = 'https://zolikvkedax.plechik52.workers.dev/'; 
-            
+        // Функция для отправки данных на Cloudflare
+        async function sendDataToWorker(textToSend) {
             let userId = 0;
-            
-            // Берем ID прямо в момент клика
             if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
                 userId = tg.initDataUnsafe.user.id;
             }
 
-            if (userId === 0) {
-                tg.showAlert("Ошибка: Telegram Desktop все еще не передал initData.");
-                return;
-            }
+            if (userId === 0) return; // Если ID нет, ничего не делаем
 
             try {
-                const response = await fetch(WORKER_URL, {
+                await fetch(WORKER_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
                         user_id: userId, 
-                        text: "Сигнал из мини-приложения прилетел в Cloudflare!" 
+                        text: textToSend 
                     })
                 });
-                
-                const result = await response.json();
-                
-                if (response.ok) {
-                    tg.showAlert("Успешно отправлено! Бот должен прислать сообщение.");
-                } else {
-                    tg.showAlert("Ошибка сервера: " + JSON.stringify(result));
-                }
+                tg.close(); // Закрываем Mini App после успешной отправки
             } catch (error) {
-                tg.showAlert("Сетевая ошибка: Failed to fetch.");
+                console.error("Ошибка отправки:", error);
             }
+        }
+
+        // Кнопка 1: Отправляет первый вариант текста через Cloudflare
+        document.getElementById('simple-send').addEventListener('click', () => {
+            sendDataToWorker('Кнопка 1: Данные из чата {"source":"GitHub Pages","status":"ok"}');
+        });
+
+        // Кнопка 2: Отправляет второй вариант текста через Cloudflare
+        document.getElementById('worker-send').addEventListener('click', () => {
+            sendDataToWorker('Кнопка 2: Сигнал из мини-приложения прилетел в Cloudflare!');
         });
     </script>
 </body>
