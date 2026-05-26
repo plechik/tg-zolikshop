@@ -36,19 +36,17 @@
     <script>
         // Инициализируем WebApp
         const tg = window.Telegram.WebApp;
-        
-        // КРИТИЧЕСКИ ВАЖНО: сообщаем Telegram, что приложение готово и можно передавать данные
+
         tg.ready(); 
         tg.expand();
 
-        // Проверяем имя пользователя сразу при загрузке (с подстраховкой)
+        // Проверяем имя пользователя (теперь на ПК через инлайн-кнопку оно точно определится)
         if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
             document.getElementById('user-name').innerText = tg.initDataUnsafe.user.first_name;
         }
 
-        // Логика кнопки 1 (Базовая отправка через интерфейс TG)
+        // Логика кнопки 1 (Просто закрываем WebApp, так как sendData доступен только в Reply-режиме)
         document.getElementById('simple-send').addEventListener('click', () => {
-            tg.sendData(JSON.stringify({ source: "GitHub Pages", status: "ok" }));
             tg.close();
         });
 
@@ -58,14 +56,13 @@
             
             let userId = 0;
             
-            // Запрашиваем данные заново прямо в момент клика по кнопке!
+            // Берем ID прямо в момент клика
             if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
                 userId = tg.initDataUnsafe.user.id;
             }
 
-            // Если Telegram всё еще не отдал ID (например, открыли всё-таки в браузере)
             if (userId === 0) {
-                tg.showAlert("Ошибка: Объект initData пуст. Если ты в телеграме, перезапусти Mini App крестиком.");
+                tg.showAlert("Ошибка: Telegram Desktop все еще не передал initData.");
                 return;
             }
 
@@ -87,7 +84,7 @@
                     tg.showAlert("Ошибка сервера: " + JSON.stringify(result));
                 }
             } catch (error) {
-                tg.showAlert("Сетевая ошибка: Failed to fetch. Проверь, запущен ли воркер.");
+                tg.showAlert("Сетевая ошибка: Failed to fetch.");
             }
         });
     </script>
