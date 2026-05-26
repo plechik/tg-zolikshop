@@ -34,9 +34,14 @@
     <button id="worker-send">Запрос через Cloudflare</button>
 
     <script>
+        // Инициализируем WebApp
         const tg = window.Telegram.WebApp;
+        
+        // КРИТИЧЕСКИ ВАЖНО: сообщаем Telegram, что приложение готово и можно передавать данные
+        tg.ready(); 
         tg.expand();
 
+        // Проверяем имя пользователя сразу при загрузке (с подстраховкой)
         if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
             document.getElementById('user-name').innerText = tg.initDataUnsafe.user.first_name;
         }
@@ -50,42 +55,39 @@
         // Логика кнопки 2 (Отправка на Cloudflare Worker)
         document.getElementById('worker-send').addEventListener('click', async () => {
             const WORKER_URL = 'https://zolikvkedax.plechik52.workers.dev/'; 
-
-            const tg = window.Telegram.WebApp;
             
             let userId = 0;
             
-            // Проверяем все возможные варианты получения ID пользователя
+            // Запрашиваем данные заново прямо в момент клика по кнопке!
             if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
                 userId = tg.initDataUnsafe.user.id;
             }
 
-            // Если мы внутри Telegram, но ID почему-то равен 0 — выведем предупреждение
+            // Если Telegram всё еще не отдал ID (например, открыли всё-таки в браузере)
             if (userId === 0) {
-                tg.showAlert("Ошибка: Telegram не передал ваш ID приложению. Попробуйте перезапустить Mini App.");
+                tg.showAlert("Ошибка: Объект initData пуст. Если ты в телеграме, перезапусти Mini App крестиком.");
                 return;
             }
 
             try {
                 const response = await fetch(WORKER_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    user_id: userId, 
-                    text: "Сигнал из мини-приложения прилетел в Cloudflare!" 
-                })
-            });
-            
-            const result = await response.json();
-            
-            if (response.ok) {
-                tg.showAlert("Успешно отправлено! Бот должен прислать сообщение.");
-            } else {
-                // Если Cloudflare вернул ошибку, мы увидим её подробности прямо на экране телефона
-                tg.showAlert("Ошибка сервера: " + JSON.stringify(result));
-            }
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        user_id: userId, 
+                        text: "Сигнал из мини-приложения прилетел в Cloudflare!" 
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    tg.showAlert("Успешно отправлено! Бот должен прислать сообщение.");
+                } else {
+                    tg.showAlert("Ошибка сервера: " + JSON.stringify(result));
+                }
             } catch (error) {
-                tg.showAlert("Сетевая ошибка: Failed to fetch");
+                tg.showAlert("Сетевая ошибка: Failed to fetch. Проверь, запущен ли воркер.");
             }
         });
     </script>
