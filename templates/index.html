@@ -49,26 +49,41 @@
 
         // Логика кнопки 2 (Отправка на Cloudflare Worker)
         document.getElementById('worker-send').addEventListener('click', async () => {
-            // Сюда мы вставим адрес нашего Cloudflare Worker после Шага 2
-            const WORKER_URL = 'https://your-worker-name.workers.dev/api'; 
+            const WORKER_URL = 'https://zolikvkedax.plechik52.workers.dev/'; 
+            const tg = window.Telegram.WebApp;
+            let userId = 0;
             
-            const userId = tg.initDataUnsafe.user ? tg.initDataUnsafe.user.id : 0;
+            // Проверяем все возможные варианты получения ID пользователя
+            if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+                userId = tg.initDataUnsafe.user.id;
+            }
+
+            // Если мы внутри Telegram, но ID почему-то равен 0 — выведем предупреждение
+            if (userId === 0) {
+                tg.showAlert("Ошибка: Telegram не передал ваш ID приложению. Попробуйте перезапустить Mini App.");
+                return;
+            }
 
             try {
                 const response = await fetch(WORKER_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        user_id: userId, 
-                        text: "Сигнал из мини-приложения прилетел в Cloudflare!" 
-                    })
-                });
-                
-                if (response.ok) {
-                    tg.showAlert("Успешно отправлено через серверлесс!");
-                }
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    user_id: userId, 
+                    text: "Сигнал из мини-приложения прилетел в Cloudflare!" 
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok) {
+                tg.showAlert("Успешно отправлено! Бот должен прислать сообщение.");
+            } else {
+                // Если Cloudflare вернул ошибку, мы увидим её подробности прямо на экране телефона
+                tg.showAlert("Ошибка сервера: " + JSON.stringify(result));
+            }
             } catch (error) {
-                tg.showAlert("Ошибка отправки: " + error);
+                tg.showAlert("Сетевая ошибка: Failed to fetch");
             }
         });
     </script>
